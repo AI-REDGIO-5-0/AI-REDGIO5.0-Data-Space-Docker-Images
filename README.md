@@ -146,8 +146,9 @@ sudo certbot --nginx -d your-domain.com
 
 ### Step 5: Access the Application
 
-Open a browser and navigate to: http://<your-server-ip>:8080
-Replace <your-server-ip> with your server's IP address or localhost if running locally.
+Open a browser and navigate to: http://your-server-ip/your-url
+Replace your-server-ip/your-url with your server's IP address or localhost if running locally.
+After this you need to contact Suite5 for keycloak credentials.
 
 
 ### Stopping the Application
