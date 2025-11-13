@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: ai-redgio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    ports:
+      - "54320:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: ai-redgio-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: ai-redgio-minio-setup
+    restart: "no"
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
+      /usr/bin/mc mb myminio/${BUCKET_NAME} --ignore-existing;
+      exit 0;
+      "
+
+  connector:
+    image: ghcr.io/suite5/ai-redgio-5-data-connector:1.0.2
+    container_name: ai-redgio-connector
+    restart: unless-stopped
+    environment:
+      APP_NAME: data-connector
+      APP_PORT: 3000
+      APP_LOG_LEVEL: info
+      DB_NAME: ${DATABASE_NAME}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DATABASE_USER}
+      DB_PASSWORD: ${DATABASE_PASSWORD}
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      BUCKET_NAME: ${BUCKET_NAME}
+      KC_URL: ${KC_URL}
+      KC_REALM: ${KC_REALM}
+      KC_CLIENT_ID: ${KC_CLIENT_ID}
+      KC_CLIENT_SECRET: ${KC_CLIENT_SECRET}
+      CLOUD_CATALOG_URL: ${CLOUD_CATALOG_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - minio
+
+  connector-migrations:
+    image: ghcr.io/suite5/ai-redgio-5-data-connector:1.0.2
+    container_name: ai-redgio-connector-migrations
+    restart: "no"
+    environment:
+      DB_NAME: ${DATABASE_NAME}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DATABASE_USER}
+      DB_PASSWORD: ${DATABASE_PASSWORD}
+    command: sh -c "pnpm exec mikro-orm migration:up"
+    depends_on:
+      - postgres
+
+  ui:
+    image: ghcr.io/suite5/ai-redgio-5-participant-ui:1.1.0
+    container_name: ai-redgio-ui
+    restart: unless-stopped
+    environment:
+      NUXT_AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_ORIGIN: ${FRONTEND_URL}
+      NUXT_KEYCLOAK_ISSUER: ${KC_URL}/realms/${KC_REALM}
+      NUXT_KEYCLOAK_CLIENT_ID: ${KC_FE_CLIENT_ID}
+      NUXT_PUBLIC_API_BASE_URL: http://connector:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - connector
+
+volumes:
+  postgres_data:
+  minio_data:
