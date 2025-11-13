@@ -41,7 +41,7 @@ services:
       "
 
   connector:
-    image: ghcr.io/suite5/ai-redgio-5-data-connector:1.0.2
+    image: ghcr.io/ai-redgio-5-0/ai-redgio-5-data-connector:1.0.2
     container_name: ai-redgio-connector
     restart: unless-stopped
     environment:
@@ -70,7 +70,7 @@ services:
       - minio
 
   connector-migrations:
-    image: ghcr.io/suite5/ai-redgio-5-data-connector:1.0.2
+    image: ghcr.io/ai-redgio-5-0/ai-redgio-5-data-connector:1.0.2
     container_name: ai-redgio-connector-migrations
     restart: "no"
     environment:
@@ -84,7 +84,7 @@ services:
       - postgres
 
   ui:
-    image: ghcr.io/suite5/ai-redgio-5-participant-ui:1.1.0
+    image: ghcr.io/ai-redgio-5-0/ai-redgio-5-participant-ui:1.1.0
     container_name: ai-redgio-ui
     restart: unless-stopped
     environment:
