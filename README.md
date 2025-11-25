@@ -116,6 +116,10 @@ Create an Nginx configuration (replace your-domain.com with your domain or your 
 server {
     listen 80;
     server_name your-domain.com;
+    proxy_buffer_size     32k;
+    proxy_buffers       8 32k;
+    proxy_busy_buffers_size  64k;
+    large_client_header_buffers 4 32k;
 
     location / {
         proxy_pass http://localhost:8080;
